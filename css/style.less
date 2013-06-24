@@ -2,9 +2,30 @@ body {
 	background: #e5e5e5;
 	margin: 0;
 	padding: 10px;
+	font-family: Arial, Helvetica, sans-serif;
 	//width: 400%;
 	//-webkit-transform: scale(0.25);
 	//-webkit-transform-origin: 0 0;
+	-webkit-print-color-adjust: exact;
+}
+
+#importExport {
+	display: none;
+	position: fixed;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	background: rgba(0,0,0,0.3);
+
+	textarea {
+		display: block;
+		position: absolute;
+		top: 30px;
+		right: 30px;
+		bottom: 30px;
+		left: 30px;
+	}
 }
 
 .card {
@@ -17,4 +38,41 @@ body {
 	overflow: hidden;
 	border-radius: 2mm;
 	-webkit-box-shadow: 0 1px 3px 0 rgba(0,0,0,0.4);
+	-webkit-box-sizing: border-box;
+	page-break-inside: avoid;
+}
+
+.droptarget {
+	position: fixed;
+	display: none;
+	top: 0;
+	left: 0;
+	bottom: 0;
+	right: 0;
+	background: rgba(255,255,255,0.9);
+	color: rgba(0,0,0,0.4);
+	font-size: 72px;
+
+	&:before {
+		content: "";
+		position: absolute;
+		display: block;
+		left: 20px;
+		right: 20px;
+		bottom: 20px;
+		top: 20px;
+		border: rgba(0,0,0,0.2) dashed 4px;
+		border-radius: 12px;
+	}
+
+	&:after {
+		content: "Drop CSV files here";
+		position: absolute;
+		display: block;
+		top: 50%;
+		width: 100%;
+		text-align: center;
+		line-height: 100px;
+		margin-top: -50px;
+	}
 }

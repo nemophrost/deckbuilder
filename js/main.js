@@ -1,24 +1,19 @@
 $(function() {
 // versioning (view and revert?) version number on card, csv import, export, print only changed, printing, versioning based on last time printed or save dialog
 
-var deck;
-if (localStorage.deck && window.JSON) {
-	deck = JSON.parse(localStorage.deck);
-}
-else {
-	deck = sampleDeck;
-	if (window.JSON) {
-		localStorage.deck = JSON.stringify(deck);
-	}
-}
+var exportCSVButton = $('#exportCSV'),
+	importCSVButton = $('#importCSV'),
+	downloadCSVLink = $('#downloadCSV').hide(),
+	importExportModal = $('#importExport'),
+	exportTextArea = $('#exportTA'),
+	cardViewContainer = $('#cardViews'),
+	templateArea = $('#template'),
+	dropTarget = $('#dropTarget');
 
-var template = $.trim($('body').get(0).innerHTML);
-$('body').empty();
+var decks = DeckSet.load();
 
-var save = function() {
-	if (window.JSON)
-		localStorage.deck = JSON.stringify(deck);
-};
+var template = $.trim(templateArea.get(0).innerHTML);
+templateArea.empty();
 
 var eachWithData = function(card, dom, attr, each) {
 	dom.find('[' + attr + ']').each(function() {
@@ -68,7 +63,7 @@ var createCardDom = function(card) {
 	eachWithData(card, cardDom, 'data-content', function(dom, value, key, params) {
 		bindContent(dom, value, function(newVal) {
 			card[key] = newVal;
-			save();
+			decks.save();
 		});
 	});
 
@@ -81,7 +76,7 @@ var createCardDom = function(card) {
 	eachWithData(card, cardDom, 'data-click-prompt', function(dom, value, key, params) {
 		bindClickPrompt(dom, key, value, function(newVal) {
 			card[key] = newVal;
-			save();
+			decks.save();
 
 			createCardDom(card).insertAfter(cardDom);
 			cardDom.remove();
@@ -89,7 +84,7 @@ var createCardDom = function(card) {
 	});
 
 	// loop over a delimited list of values for a key
-	// NOTE: this must be last as it removed the original dom element
+	// NOTE: this must be last as it removes the original dom element
 	eachWithData(card, cardDom, 'data-each', function(dom, data, key, params) {
 		var method = params[0] || 'content',
 			delimiter = dom.attr('data-each-delimiter') || ',';
@@ -102,7 +97,7 @@ var createCardDom = function(card) {
 					bindContent(clone, val, function(newVal) {
 						data[i] = newVal;
 						card[key] = data.join(delimiter);
-						save();
+						decks.save();
 					});
 					break;
 				case 'class':
@@ -120,8 +115,151 @@ var createCardDom = function(card) {
 	return cardDom;
 };
 
-$.each(deck, function(i, card) {
-	createCardDom(card).appendTo('body');
+var loadDeck = function(deck) {
+	if (!deck)
+		return;
+
+	decks.setActiveDeck(deck);
+
+	cardViewContainer.empty();
+	_.each(deck.cards, function(card) {
+		createCardDom(card.data).appendTo(cardViewContainer);
+	});
+};
+
+loadDeck(decks.getActiveDeck());
+
+/* CSV EXPORT
+=========================================================================== */
+exportCSVButton.click(function() {
+	$(this).hide();
+	var deck = decks.getActiveDeck();
+	if (!deck)
+		return;
+
+	downloadCSVLink.show().attr({ href: 'data:application/octet-stream,' + encodeURIComponent(objectsToCSV(deck.serialize(true))), download: deck.name + '.csv' });
+	// hiddenIframe.get(0).src = 'data:application/octet-stream,' + encodeURIComponent(objectsToCSV(deck));
+
+	// importExportModal.show();
+	// exportTextArea.val(objectsToCSV(deck));
+
+	// alert(objectsToCSV(deck) == objectsToCSV($.csv.toObjects(objectsToCSV(deck))));
+
+	// $(document).bind('keydown.modal', function(e) {
+	// 	if (e.keyCode == 27) {
+	// 		$(document).unbind('keydown.modal');
+	// 		importExportModal.hide();
+	// 	}
+	// });
 });
 
+downloadCSVLink.click(function() {
+	$(this).hide();
+	exportCSVButton.show();
 });
+
+/* DRAG AND DROP CSV IMPORT
+=========================================================================== */
+function importCSVData(fileName, dataString) {
+	try {
+		var data = $.csv.toObjects(dataString);
+		fileName = fileName.toLowerCase().split('.');
+		fileName.pop();
+		var deck = decks.updateDeckFromCSV(fileName.join('.'), data);
+		decks.save();
+		loadDeck(deck);
+	}
+	catch(er) {}
+}
+
+var dragLeaveTimer;
+function handleDragOver(e) {
+	e.stopPropagation();
+	e.preventDefault();
+	dropTarget.show();
+
+	if (dragLeaveTimer)
+		clearTimeout(dragLeaveTimer);
+}
+
+function handleDragLeave(e) {
+	e.stopPropagation();
+	e.preventDefault();
+	dragLeaveTimer = setTimeout(function() {
+		dropTarget.hide();
+	}, 100);
+}
+
+function handleFileSelect(e) {
+	e.stopPropagation();
+	e.preventDefault();
+
+	dropTarget.hide();
+
+	_.each(e.dataTransfer.files, function(f) {
+		if (f.type.toLowerCase().indexOf('csv') == -1)
+			return;
+
+		var reader = new FileReader();
+
+		// Closure to capture the file information.
+		reader.onload = function(e) {
+			importCSVData(f.name, e.target.result);
+		};
+
+		// Read in the image file as a data URL.
+		reader.readAsText(f);
+	});
+}
+
+// Setup the dnd listeners.
+window.addEventListener('dragover', handleDragOver, false);
+window.addEventListener('dragleave', handleDragLeave, false);
+window.addEventListener('drop', handleFileSelect, false);
+
+});
+
+function objectsToCSV(objs) {
+	if (!_)
+		throw new Error('objectsToCSV requires underscore to be loaded.');
+
+	// get all the keys for the column labels of the CSV
+	var ret = [],
+		keyMap = {},
+		columns = 0,
+		format = function(obj) {
+			if (!_.isString(obj))
+				obj = JSON.stringify(obj);
+
+			if (obj.search(/[\n\r,"]/g) > -1) {
+				obj = '"' + obj.replace(/"/g, '""') + '"';
+			}
+
+			return obj;
+		};
+
+	_.forEach(objs, function(obj) {
+		_.forEach(obj, function(val, key) {
+			if (keyMap[key] === undefined) {
+				keyMap[key] = columns;
+				columns++;
+			}
+		});
+	});
+
+	var header = new Array(columns);
+	_.forEach(keyMap, function(column, label) {
+		header[column] = format(label);
+	});
+	ret.push(header.join(','));
+
+	_.forEach(objs, function(obj) {
+		var row = new Array(columns);
+		_.forEach(obj, function(val, key) {
+			row[keyMap[key]] = format(val);
+		});
+		ret.push(row.join(','));
+	});
+
+	return ret.join('\r\n');
+}

@@ -5,30 +5,57 @@
 
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-	<link rel="stylesheet/less" type="text/css" href="css/style.less">
+	<link rel="stylesheet/less" type="text/css" media="all" href="css/style.less">
+	<link rel="stylesheet/less" type="text/css" media="all" href="css/sampledeck.less">
+	<!-- <link rel="stylesheet/less" type="text/css" media="screen" href="css/style.less">
+	<link rel="stylesheet/less" type="text/css" media="screen" href="css/sampledeck.less"> -->
 
 	<script type="text/javascript" src="js/jquery-min.js"></script>
+	<script type="text/javascript" src="js/jquery.csv.min.js"></script>
 	<script type="text/javascript" src="js/less.min.js"></script>
 	<script type="text/javascript" src="js/underscore-min.js"></script>
-	<script type="text/javascript" src="js/sampledeck.js"></script>
+	<script type="text/javascript" src="js/card.js"></script>
+	<script type="text/javascript" src="js/deck.js"></script>
 	<script type="text/javascript" src="js/main.js"></script>
 </head>
 <body>
 
-<div class="card">
-	<div class="name">
-		<span data-content="name"></span>
-		<span class="cost">
-			<span class="cost-token" data-each="cost:class" data-each-delimiter=","></span>
-		</span>
-	</div>
-	<div class="image" style="background-image:url({{image}})" data-click-prompt="image"></div>
-	<div class="type" data-content="type"></div>
-	<div class="rules" data-content="rulestext"></div>
-	<div class="stats">
-		<span data-content="power"></span> / <span data-content="toughness"></span>
-	</div>
-</div>
+	<header>
+		<button id="importCSV">Import CSV</button>
+		<button id="exportCSV">Export CSV</button>
+		<a id="downloadCSV">Click again to save CSV</a>
+		<button id="toggleTemplateEditor">Toggle Template Editor</button>
+	</header>
 
+	<div id="manager">
+		<div id="cardViews"></div>
+	</div>
+
+	<div id="template">
+	<!-- PUT YOUR CARD TEMPLATE HTML AFTER THIS COMMENT -->
+		<div class="card">
+			<div class="name">
+				<span data-content="name"></span>
+				<span class="cost">
+					<span class="cost-token" data-each="cost:class" data-each-delimiter=","></span>
+				</span>
+			</div>
+			<div class="image" style="background-image:url({{image}})" data-click-prompt="image"></div>
+			<div class="type" data-content="type"></div>
+			<div class="rules" data-content="rules"></div>
+			<div class="stats">
+				<span data-content="attack"></span> / <span data-content="defense"></span>
+			</div>
+		</div>
+	<!-- PUT YOUR CARD TEMPLATE HTML BEFORE THIS COMMENT -->
+	</div>
+
+	<div id="importExport">
+		<textarea id="exportTA" rows="20"></textarea>
+	</div>
+
+	<iframe id="hiddenIframe"></iframe>
+
+	<div id="dropTarget" class="droptarget"></div>
 </body>
 </html>
