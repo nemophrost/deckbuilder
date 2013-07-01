@@ -34,7 +34,7 @@ body {
 	margin: 10px;
 	width: 63mm;
 	height: 88mm;
-	background: #f2f2f2;
+	background: white;
 	overflow: hidden;
 	border-radius: 2mm;
 	-webkit-box-shadow: 0 1px 3px 0 rgba(0,0,0,0.4);
@@ -74,5 +74,29 @@ body {
 		text-align: center;
 		line-height: 100px;
 		margin-top: -50px;
+	}
+}
+
+/* PRINT ONLY
+==============================================================================*/
+
+@page {
+	size: letter landscape;
+	margin: .25in 0;
+}
+
+@media print {
+	body {
+		background: white;
+	}
+
+	.card {
+		margin: 0 0.2mm 0.2mm 0;
+		border-radius: 0;
+		-webkit-box-shadow: none;
+	}
+
+	body > *:not(#manager) {
+		display: none;
 	}
 }
